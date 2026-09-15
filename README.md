@@ -1,74 +1,44 @@
 # Technical Lesson: Building a Full CRUD REST API with Flask
 
+## Overview
+
+This project is the completed implementation of the technical lesson on building
+a **Full CRUD REST API** with Flask. It demonstrates how to expose Create, Read,
+Update, and Delete operations over HTTP using RESTful route conventions, JSON
+request/response handling, and appropriate status codes — all backed by an
+in-memory data store (no database required).
+
+The API models a simple **event management** resource:
+
+- `GET /events/<id>` — Retrieve a single event by ID
+- `POST /events` — Create a new event
+- `PATCH /events/<id>` — Update an existing event's title
+- `DELETE /events/<id>` — Delete an event
+
 ## Learning Goals
 
-- Understand how HTTP methods map to CRUD operations in REST.
-- Build Flask routes that handle POST, GET, PATCH, and DELETE requests.
-- Work with structured JSON input and output.
-- Use in-memory Python objects to simulate persistent data.
-- Follow RESTful conventions in route naming, structure, and response codes.
+- ✅ Understand how HTTP methods map to CRUD operations in REST.
+- ✅ Build Flask routes that handle POST, GET, PATCH, and DELETE requests.
+- ✅ Work with structured JSON input and output.
+- ✅ Use in-memory Python objects to simulate persistent data.
+- ✅ Follow RESTful conventions in route naming, structure, and response codes.
 
-## Introduction
+## Project Structure
 
-Most modern applications need more than just data retrieval—they also require the ability to create, update, and delete resources. This is known as **Full CRUD**: Create, Read, Update, and Delete.
-
-In this lesson, we will focus on:
-
-- Building POST, PATCH, DELETE, and GET routes with Flask.
-- Receiving and handling JSON input using `request.get_json()`.
-- Structuring responses using Python objects and `jsonify()`.
-- Returning appropriate HTTP status codes for each type of operation.
-
-We’ll use an event management API as our example. This API will allow users to:
-
-- View a specific event by ID.
-- Create new events.
-- Update event details like the title.
-- Delete events that are no longer needed.
-
-The current system:
-
-- Uses an in-memory list of `Event` class instances.
-- Simulates backend behavior without a database.
-- Needs route handlers for full CRUD interactions.
-
-We will walk through building this API step by step, expanding beyond read-only access into a complete backend experience.
-
-## Code Along
-
-### Setting Up the Project
-
-To get started, clone the repository and install any dependencies.
-
-If you're using `pipenv`:
-
-```bash
-git clone <repo-url>
-cd flask-full-crud-api
-pipenv install
-pipenv shell
+```
+.
+├── app.py            # Flask application with all CRUD routes
+├── Pipfile            # Project dependencies (Flask)
+├── Pipfile.lock
+└── README.md
 ```
 
-If you're using `pip`:
+## How It Works
 
-```bash
-git clone <repo-url>
-cd flask-full-crud-api
-pip install -r requirements.txt
-```
-
-### Writing the Full CRUD API with Flask
-
-We’ll define all routes inside `app.py` and simulate events with mock objects.
-
-#### Example: `app.py`
+The app defines a simple `Event` class and stores instances in an in-memory
+list, standing in for a database:
 
 ```python
-from flask import Flask, jsonify, request
-
-app = Flask(__name__)
-
-# Event class
 class Event:
     def __init__(self, id, title):
         self.id = id
@@ -77,86 +47,97 @@ class Event:
     def to_dict(self):
         return {"id": self.id, "title": self.title}
 
-# Mock event data
 events = [
     Event(1, "Tech Meetup"),
     Event(2, "Python Workshop")
 ]
-
-# READ: Get event by ID
-@app.route("/events/<int:id>", methods=["GET"])
-def get_event(id):
-    event = next((e for e in events if e.id == id), None)
-    return jsonify(event.to_dict()) if event else ("Event not found", 404)
-
-# CREATE: Add new event
-@app.route("/events", methods=["POST"])
-def create_event():
-    data = request.get_json()
-    new_id = max((e.id for e in events), default=0) + 1
-    new_event = Event(id=new_id, title=data["title"])
-    events.append(new_event)
-    return jsonify(new_event.to_dict()), 201
-
-# UPDATE: Modify event title
-@app.route("/events/<int:id>", methods=["PATCH"])
-def update_event(id):
-    data = request.get_json()
-    event = next((e for e in events if e.id == id), None)
-    if not event:
-        return ("Event not found", 404)
-    if "title" in data:
-        event.title = data["title"]
-    return jsonify(event.to_dict())
-
-# DELETE: Remove an event
-@app.route("/events/<int:id>", methods=["DELETE"])
-def delete_event(id):
-    global events
-    event = next((e for e in events if e.id == id), None)
-    if not event:
-        return ("Event not found", 404)
-    events = [e for e in events if e.id != id]
-    return ("Event deleted", 204)
-
-if __name__ == "__main__":
-    app.run(debug=True)
 ```
 
-### Testing the API
+Each CRUD operation is implemented as its own route:
 
-Run the app using:
+| Method | Route | Description | Success Status |
+| --- | --- | --- | --- |
+| `GET` | `/events/<int:id>` | Fetch a single event by ID | `200` |
+| `POST` | `/events` | Create a new event | `201` |
+| `PATCH` | `/events/<int:id>` | Update an event's title | `200` |
+| `DELETE` | `/events/<int:id>` | Delete an event | `204` |
+
+Requests for a non-existent event ID return `404 Event not found` on `GET`,
+`PATCH`, and `DELETE`.
+
+## Setup
+
+Clone the repo and install dependencies.
+
+**Using `pipenv`:**
+
+```bash
+git clone <repo-url>
+cd course-8-module-5-flask-full-crud-api-technical-lesson
+pipenv install
+pipenv shell
+```
+
+**Using `pip`:**
+
+```bash
+git clone <repo-url>
+cd course-8-module-5-flask-full-crud-api-technical-lesson
+pip install flask
+```
+
+## Running the App
 
 ```bash
 python app.py
 ```
 
-Then visit or test the following endpoints:
+The server starts at `http://127.0.0.1:5000` with debug mode enabled.
 
-- `GET /events/1` – Get a specific event  
-- `POST /events` – Add a new event  
-  - JSON body: `{ "title": "AI Conference" }`
-- `PATCH /events/1` – Update an event title  
-  - JSON body: `{ "title": "Updated Event Title" }`
-- `DELETE /events/2` – Delete event with ID 2
+## Testing the Endpoints
 
-You can test using your browser, Postman, or curl.
+Use `curl`, Postman, or your browser to try the following:
 
-## Best Practices for Full CRUD APIs
+**Get an event**
 
-- Use RESTful resource routes (`/events`, `/events/<id>`).
-- Use JSON format for both requests and responses.
-- Return proper status codes: 201 for created, 204 for deleted, 404 for not found.
-- Avoid changing server state in GET requests.
-- Structure all responses consistently using dictionaries and `jsonify()`.
+```bash
+curl http://127.0.0.1:5000/events/1
+```
+
+**Create an event**
+
+```bash
+curl -X POST http://127.0.0.1:5000/events \
+  -H "Content-Type: application/json" \
+  -d '{"title": "AI Conference"}'
+```
+
+**Update an event**
+
+```bash
+curl -X PATCH http://127.0.0.1:5000/events/1 \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Updated Event Title"}'
+```
+
+**Delete an event**
+
+```bash
+curl -X DELETE http://127.0.0.1:5000/events/2
+```
+
+## Best Practices Demonstrated
+
+- RESTful resource routing (`/events`, `/events/<id>`).
+- JSON in, JSON out via `request.get_json()` and `jsonify()`.
+- Correct status codes for each operation: `201` created, `200` OK, `204` no
+  content on delete, `404` not found.
+- No server-state mutation on `GET` requests.
+- Consistent response shape via `Event.to_dict()`.
 
 ## Conclusion
 
-By building a Full CRUD REST API with Flask, developers can:
-
-- Simulate complete backend functionality.
-- Create routes that reflect real-world application logic.
-- Connect APIs to frontends or testing tools like Postman.
-- Prepare for integration with databases and advanced validation.
-
-This lesson sets the stage for fully functional APIs and scalable backend systems.
+This lesson takes a read-only API and extends it into a fully functional CRUD
+backend. The patterns here — resource-based routing, JSON handling, and status
+code conventions — carry directly into building APIs backed by a real database
+and more advanced validation.
